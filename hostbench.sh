@@ -95,7 +95,7 @@ center "The benchmark usually takes about 30 minutes to be completed, but in som
 center "For the reliable results, run this script only on new VPS."
 center "WARNING: During the benchmark you will write to the disk about 5GB and download about 10GB of data."
 center "Hostbench.io accepts no responsibility for any additional costs or damage this script may cause."
-center "The script has been tested on Ubuntu 16.04 and Debian 8.5. Propper execution on different OS'es is not guarantied.'"
+center "The script has been tested on Ubuntu 16.04 and Debian Ubuntu 14.04. Propper execution on different OS'es is not guarantied.'"
 empty_line
 echo "Starting Benchmark..."
 echo "UID: $1" >> benchmark.results
