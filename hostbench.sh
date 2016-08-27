@@ -3,7 +3,7 @@ echo "Initiating benchmark..."
 
 # Benchmark requires root privileges to be able to build packages from source and install them into the system.
 
-OS=$(echo `awk -F= '/^ID/{print $2}' /etc/os-release`)
+OS=$(echo `awk -F= '/^ID=/{print $2}' /etc/os-release`)
 
 if [ "$(whoami)" != "root" ]; then
 printf "You must run this script as root user.\n"
