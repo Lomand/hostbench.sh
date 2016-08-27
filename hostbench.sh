@@ -95,6 +95,7 @@ center "The benchmark usually takes about 30 minutes to be completed, but in som
 center "For the reliable results, run this script only on new VPS."
 center "WARNING: During the benchmark you will write to the disk about 5GB and download about 10GB of data."
 center "Hostbench.io accepts no responsibility for any additional costs or damage this script may cause."
+center "The script has been tested on Ubuntu 16.04 and Ubuntu 14.04. Propper execution on different OS'es is not guarantied.'"
 empty_line
 echo "Starting Benchmark..."
 echo "UID: $1" >> benchmark.results
@@ -126,7 +127,7 @@ echo "Benchmarking Write Speed of 64K blocks..."
 echo "Write64K: `fio --randrepeat=1 --ioengine=libaio --direct=1 --gtod_reduce=1 --name=io.benchmark --filename=io.benchmark --bs=64k  --size=$QUAD --readwrite=randwrite | getKBS`" | tee -a benchmark.results | awk '{print $1 " " $2/1024 " MB/s"}'
 empty_line
 echo "Benchmarking Write Speed of 512K blocks..."
-echo "Write512K: `fio --randrepeat=1 --ioengine=libaio --dWirect=1 --gtod_reduce=1 --name=io.benchmark --filename=io.benchmark --bs=512k  --size=$QUAD --readwrite=randwrite | getKBS`" | tee -a benchmark.results | awk '{print $1 " " $2/1024 " MB/s"}'
+echo "Write512K: `fio --randrepeat=1 --ioengine=libaio --direct=1 --gtod_reduce=1 --name=io.benchmark --filename=io.benchmark --bs=512k  --size=$QUAD --readwrite=randwrite | getKBS`" | tee -a benchmark.results | awk '{print $1 " " $2/1024 " MB/s"}'
 empty_line
 echo "Benchmarking Read Speed and IOPS of 4K blocks..."
 echo "`fio --randrepeat=1 --ioengine=libaio --direct=1 --name=io.benchmark --filename=io.benchmark --bs=4k  --size=$QUAD --readwrite=randread |grep -E 'read : io='| awk -F',' '{gsub(" ",""); gsub("iops=","\nRIOPS:"); gsub("bw=","Read4K:"); gsub("KB/s",""); print  $2  $3}'`" | tee -a benchmark.results | awk 'NR==1 { print $0 " KB/s" } END { print $0 " IOPS" }' 
