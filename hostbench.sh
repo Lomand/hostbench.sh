@@ -3,14 +3,16 @@ echo "Initiating benchmark..."
 
 # Benchmark requires root privileges to be able to build packages from source and install them into the system.
 
+OS=$(echo `awk -F= '/^ID/{print $2}' /etc/os-release`)
+
 if [ "$(whoami)" != "root" ]; then
 printf "You must run this script as root user.\n"
 exit 1
 elif test "$#" -ne 1; then
 printf "You should provide ID to run the benchmark.\nExample: sudo ./benchmark.sh 'IRMMTUI71YYCZ'\n"
 exit 1
-elif [echo `gawk -F= '/^ID_LIKE/{print $2}' /etc/os-release` -ne  'debian']; then
-printf "Unfortunately, this benchmark is only works on Debian-based distros."
+elif [ "$OS" !=  "ubuntu" ]; then
+printf "Unfortunately, at this stage the benchmark only works on Ubuntu.\n"
 exit 1
 else
 # Everything is Ok, now we can start...
