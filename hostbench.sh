@@ -27,7 +27,7 @@ echo "Installing benchmark dependencies...."
 
 # Updating package list and installing build dependencies
 apt-get update
-apt-get install  -y build-essential libaio-dev zlib1g-dev libncurses5-dev gcc make automake autopoint pkg-config curl  checkinstall unzip libtool bc git --fix-missing
+apt-get install  -y build-essential libaio-dev zlib1g-dev libncurses5-dev gcc make automake autopoint pkg-config curl  checkinstall unzip libtool bc git virt-what --fix-missing
 
 
 printf "\033c"
@@ -95,21 +95,22 @@ center "The benchmark usually takes about 30 minutes to be completed, but in som
 center "For the reliable results, run this script only on new VPS."
 center "WARNING: During the benchmark you will write to the disk about 5GB and download about 10GB of data."
 center "Hostbench.io accepts no responsibility for any additional costs or damage this script may cause."
-center "The script has been tested on Ubuntu 16.04 and Debian Ubuntu 14.04. Propper execution on different OS'es is not guarantied.'"
 empty_line
 echo "Starting Benchmark..."
 echo "UID: $1" >> benchmark.results
 
 echo "ServerIP: `ifconfig eth0 | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1}'`" >> benchmark.results
 echo "Getting distro information and disk size..."
-echo "Distro: `gawk -F= '/^PRETTY_NAME/{print $2}' /etc/os-release`" | tee -a benchmark.results
+echo "Distro: `awk -F= '/^PRETTY_NAME/{print $2}' /etc/os-release`" | tee -a benchmark.results
 echo "DiskSize: `df | grep '^/' | awk '{s+=$2} END {size=sprintf("%.0f", s/1048576);print size}'`" | tee -a benchmark.results | awk '{print $1 " " $2 " GB"}'
 echo "RAMSize: $RAM" | tee -a benchmark.results | awk '{print $1 " " $2 " MB"}'
-echo "CPU Cores: $CORES"
 echo "Checking CPU specs..."
-echo "`lscpu`" >> benchmark.results
-echo "`cat /proc/cpuinfo | grep 'model name' | uniq`" | tee -a benchmark.results 
 CORES=$(cat /proc/cpuinfo | grep processor | wc -l)
+echo """CPU(s): `echo `$CORES`` """| tee -a benchmark.results
+echo "`cat /proc/cpuinfo | grep 'model name' |awk 'NR==1{print $0}'`"  | tee -a benchmark.results 
+echo "`cat /proc/cpuinfo | grep 'cpu MHz' | awk 'NR==1{print $0}'`"  | tee -a benchmark.results 
+echo "`cat /proc/cpuinfo | grep 'cache size' | awk 'NR==1{print $0}'`"  | tee -a benchmark.results 
+echo "Virtualization: `virt-what`"  | tee -a benchmark.results 
 empty_line
 echo "Benchmarking CPU..."
 CPUBenchTime="`sysbench --test=cpu --cpu-max-prime=24576 --num-threads=$CORES run | grep 'total time': | awk '{ print $3}'|grep -oE '[0-9]+([.][0-9]+)?'`"
@@ -125,7 +126,7 @@ echo "Benchmarking Write Speed of 64K blocks..."
 echo "Write64K: `fio --randrepeat=1 --ioengine=libaio --direct=1 --gtod_reduce=1 --name=io.benchmark --filename=io.benchmark --bs=64k  --size=$QUAD --readwrite=randwrite | getKBS`" | tee -a benchmark.results | awk '{print $1 " " $2/1024 " MB/s"}'
 empty_line
 echo "Benchmarking Write Speed of 512K blocks..."
-echo "Write512K: `fio --randrepeat=1 --ioengine=libaio --direct=1 --gtod_reduce=1 --name=io.benchmark --filename=io.benchmark --bs=512k  --size=$QUAD --readwrite=randwrite | getKBS`" | tee -a benchmark.results | awk '{print $1 " " $2/1024 " MB/s"}'
+echo "Write512K: `fio --randrepeat=1 --ioengine=libaio --dWirect=1 --gtod_reduce=1 --name=io.benchmark --filename=io.benchmark --bs=512k  --size=$QUAD --readwrite=randwrite | getKBS`" | tee -a benchmark.results | awk '{print $1 " " $2/1024 " MB/s"}'
 empty_line
 echo "Benchmarking Read Speed and IOPS of 4K blocks..."
 echo "`fio --randrepeat=1 --ioengine=libaio --direct=1 --name=io.benchmark --filename=io.benchmark --bs=4k  --size=$QUAD --readwrite=randread |grep -E 'read : io='| awk -F',' '{gsub(" ",""); gsub("iops=","\nRIOPS:"); gsub("bw=","Read4K:"); gsub("KB/s",""); print  $2  $3}'`" | tee -a benchmark.results | awk 'NR==1 { print $0 " KB/s" } END { print $0 " IOPS" }' 
