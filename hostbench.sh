@@ -15,23 +15,31 @@ echo "Installing benchmark dependencies...."
 
 # Everything is Ok, now we can start...
 OS=$(echo `awk -F= '/^ID_LIKE/{print $2}' /etc/os-release`)
-
+# ID=$(echo `awk -F= '/^ID=/{print $2}' /etc/os-release`)
 if [ "$OS" =  "debian" ]; then
 
 apt-get update
-apt-get install  -y build-essential libaio-dev zlib1g-dev libncurses5-dev gcc make automake autopoint pkg-config curl  checkinstall unzip libtool bc git virt-what --fix-missing
+apt-get install -y build-essential libaio-dev zlib1g-dev libncurses5-dev gcc make automake autopoint pkg-config curl  checkinstall unzip libtool bc git virt-what --fix-missing
+
+ARIA2=aria2c
+FIO=fio
+SYSBENCH=sysbench
 
 elif [ "$OS" =  '"rhel fedora"' ]; then
 
+ARIA2=/usr/local/bin/aria2c
+FIO=/usr/local/bin/fio
+SYSBENCH=/usr/local/bin/sysbench
 
 yum makecache fast
-yum install  rpm-build -y gcc gcc-c++ make openssl-devel libaio-devel  zlib-devel ncurses-devel  automake gettext-devel pkgconfig curl unzip rpmdevtools libtool bc git virt-what wget bind-utils
+yum install -y rpm-build  gcc gcc-c++ make openssl-devel libaio-devel  zlib-devel ncurses-devel  automake gettext-devel pkgconfig curl unzip rpmdevtools libtool bc git virt-what wget bind-utils 
 
 rpmdev-setuptree
 # Checkinstall is not available in the standart centos repository, so we manually downloading  and installing it. 
 wget ftp://ftp.pbone.net/mirror/distrib-coffee.ipsl.jussieu.fr/mageia/distrib/4/x86_64/media/core/release/checkinstall-1.6.2.16-9.mga4.x86_64.rpm
 
-rpm -Uvh checkinstall-1.6.2.16-9.mga4.x86_64.rpm
+yum install -y checkinstall-1.6.2.16-9.mga4.x86_64.rpm
+
 # Creating dirs for compiling packages...
 mkdir /root/tmp
 mkdir /usr/local/share/doc
@@ -117,7 +125,7 @@ center "The benchmark usually takes about 30 minutes to be completed, but in som
 center "For the reliable results, run this script only on new VPS."
 center "WARNING: During the benchmark you will write to the disk about 5GB and download about 10GB of data."
 center "Hostbench.io accepts no responsibility for any additional costs or damage this script may cause."
-center "The script has been tested on Ubuntu 16.04, 14.04 and Centos 7. Propper execution on different OS'es is not guarantied.'"
+center "The script has been tested on Ubuntu 16.04, 14.04 and Centos 7. Propper execution on different OS'es is not guarantied."
 empty_line
 echo "Starting Benchmark..."
 echo "UID: $1" >> benchmark.results
@@ -136,29 +144,29 @@ echo "`cat /proc/cpuinfo | grep 'cache size' | awk 'NR==1{print $0}'`"  | tee -a
 echo "Virtualization: `virt-what`"  | tee -a benchmark.results 
 empty_line
 echo "Benchmarking CPU..."
-CPUBenchTime="`sysbench --test=cpu --cpu-max-prime=24576 --num-threads=$CORES run | grep 'total time': | awk '{ print $3}'|grep -oE '[0-9]+([.][0-9]+)?'`"
+CPUBenchTime="`$SYSBENCH --test=cpu --cpu-max-prime=24576 --num-threads=$CORES run | grep 'total time': | awk '{ print $3}'|grep -oE '[0-9]+([.][0-9]+)?'`"
 echo """CPUScore: `echo "(24576/$CPUBenchTime)*3.4" | bc`""" | tee -a benchmark.results | awk '{print $1 " " $2 " points"}'
 empty_line
 echo "Benchmarking RAM bandwith..."
-echo "RAMBandwith: `sysbench --test=memory --memory-total-size=$TEN run | grep 'transferred (' | awk '{ print substr($4,2);}'`" | tee -a benchmark.results | awk '{print $1 " " $2-2 " MB/s"}'
+echo "RAMBandwith: `$SYSBENCH --test=memory --memory-total-size=$TEN run | grep 'transferred (' | awk '{ print substr($4,2);}'`" | tee -a benchmark.results | awk '{print $1 " " $2-2 " MB/s"}'
 empty_line
 echo "Benchmarking Write Speed  and IOPS of 4K blocks..."
-echo "`fio --randrepeat=1 --ioengine=libaio --direct=1 --name=io.benchmark --filename=io.benchmark --bs=4k  --size=$QUAD --readwrite=randwrite |grep -E 'write: io='| awk -F',' '{gsub(" ",""); gsub("iops=","\nWIOPS:"); gsub("bw=","Write4K:"); gsub("KB/s",""); print  $2  $3}'`" | tee -a benchmark.results  | awk 'NR==1 { print $0 " KB/s" } END  { print $0 " IOPS" }' 
+echo "`$FIO --randrepeat=1 --ioengine=libaio --direct=1 --name=io.benchmark --filename=io.benchmark --bs=4k  --size=$QUAD --readwrite=randwrite |grep -E 'write: io='| awk -F',' '{gsub(" ",""); gsub("iops=","\nWIOPS:"); gsub("bw=","Write4K:"); gsub("KB/s",""); print  $2  $3}'`" | tee -a benchmark.results  | awk 'NR==1 { print $0 " KB/s" } END  { print $0 " IOPS" }' 
 empty_line
 echo "Benchmarking Write Speed of 64K blocks..."
-echo "Write64K: `fio --randrepeat=1 --ioengine=libaio --direct=1 --gtod_reduce=1 --name=io.benchmark --filename=io.benchmark --bs=64k  --size=$QUAD --readwrite=randwrite | getKBS`" | tee -a benchmark.results | awk '{print $1 " " $2/1024 " MB/s"}'
+echo "Write64K: `$FIO --randrepeat=1 --ioengine=libaio --direct=1 --gtod_reduce=1 --name=io.benchmark --filename=io.benchmark --bs=64k  --size=$QUAD --readwrite=randwrite | getKBS`" | tee -a benchmark.results | awk '{print $1 " " $2/1024 " MB/s"}'
 empty_line
 echo "Benchmarking Write Speed of 512K blocks..."
-echo "Write512K: `fio --randrepeat=1 --ioengine=libaio --direct=1 --gtod_reduce=1 --name=io.benchmark --filename=io.benchmark --bs=512k  --size=$QUAD --readwrite=randwrite | getKBS`" | tee -a benchmark.results | awk '{print $1 " " $2/1024 " MB/s"}'
+echo "Write512K: `$FIO --randrepeat=1 --ioengine=libaio --direct=1 --gtod_reduce=1 --name=io.benchmark --filename=io.benchmark --bs=512k  --size=$QUAD --readwrite=randwrite | getKBS`" | tee -a benchmark.results | awk '{print $1 " " $2/1024 " MB/s"}'
 empty_line
 echo "Benchmarking Read Speed and IOPS of 4K blocks..."
-echo "`fio --randrepeat=1 --ioengine=libaio --direct=1 --name=io.benchmark --filename=io.benchmark --bs=4k  --size=$QUAD --readwrite=randread |grep -E 'read : io='| awk -F',' '{gsub(" ",""); gsub("iops=","\nRIOPS:"); gsub("bw=","Read4K:"); gsub("KB/s",""); print  $2  $3}'`" | tee -a benchmark.results | awk 'NR==1 { print $0 " KB/s" } END { print $0 " IOPS" }' 
+echo "`$FIO --randrepeat=1 --ioengine=libaio --direct=1 --name=io.benchmark --filename=io.benchmark --bs=4k  --size=$QUAD --readwrite=randread |grep -E 'read : io='| awk -F',' '{gsub(" ",""); gsub("iops=","\nRIOPS:"); gsub("bw=","Read4K:"); gsub("KB/s",""); print  $2  $3}'`" | tee -a benchmark.results | awk 'NR==1 { print $0 " KB/s" } END { print $0 " IOPS" }' 
 empty_line
 echo "Benchmarking Read Speed of 64K blocks..."
-echo "Read64K: `fio --randrepeat=1 --ioengine=libaio --direct=1 --gtod_reduce=1 --name=io.benchmark --filename=io.benchmark --bs=64k  --size=$QUAD --readwrite=randread  | getKBS`" | tee -a benchmark.results | awk '{print $1 " " $2/1024 " MB/s"}'
+echo "Read64K: `$FIO --randrepeat=1 --ioengine=libaio --direct=1 --gtod_reduce=1 --name=io.benchmark --filename=io.benchmark --bs=64k  --size=$QUAD --readwrite=randread  | getKBS`" | tee -a benchmark.results | awk '{print $1 " " $2/1024 " MB/s"}'
 empty_line
 echo "Benchmarking Read Speed of 512K blocks..."
-echo "Read512K: `fio --randrepeat=1 --ioengine=libaio --direct=1 --gtod_reduce=1 --name=io.benchmark --filename=io.benchmark --bs=512k  --size=$QUAD --readwrite=randread  | getKBS`" | tee -a benchmark.results | awk '{print $1 " " $2/1024 " MB/s"}'
+echo "Read512K: `$FIO --randrepeat=1 --ioengine=libaio --direct=1 --gtod_reduce=1 --name=io.benchmark --filename=io.benchmark --bs=512k  --size=$QUAD --readwrite=randread  | getKBS`" | tee -a benchmark.results | awk '{print $1 " " $2/1024 " MB/s"}'
 
 # Function for bandwith benchmark, result is in Mib/s
 
@@ -168,7 +176,7 @@ bandwith_benchmark() {
   empty_line
   echo "[ $((COUNTER+1))/ ${#SERVER[@]}] Testing download speed from $1 (Ping: $PING ms)"
   
-  DOWNLOAD_SPEED=`aria2c -d /dev -o null  --allow-overwrite=true -x 5 $2  --file-allocation=none | grep 'MiB/s\|KiB/s' | awk '{print substr($3,0, length($3)-10)}'`
+  DOWNLOAD_SPEED=`$ARIA2 -d /dev -o null  --allow-overwrite=true -x 5 $2  --file-allocation=none | grep 'MiB/s\|KiB/s' | awk '{print substr($3,0, length($3)-10)}'`
   echo "$DOWNLOAD_SPEED"
 
   if [  "${DOWNLOAD_SPEED: -5}" == "KiB/s" ]
@@ -214,9 +222,16 @@ empty_line
 echo "You can find a copy of the benchmark in your /root directory."
 
 echo "Removing benchmark components..."
+
+if [ "$OS" =  "debian" ]; then
+
 dpkg -r aria2 fio sysbench >/dev/null 2>&1
 
+elif [ "$OS" =  '"rhel fedora"' ]; then
+
 rpm -e fio-213-1  sysbench-1.0-1 aria2-126-1 >/dev/null 2>&1
+
+fi
 
 rm -r /tmp/hostbench.sh
 echo "Thank you for submitting your benchmark."
