@@ -97,7 +97,7 @@ RAM=$(cat /proc/meminfo | grep MemTotal | awk '{ size=sprintf("%.0f", $2/1024); 
 QUAD="1500M"  
 TEN=$((RAM*10))"M"
 COUNTER=0
-SERVER=("AMS" "DAL"  "FRA" "HKG" "LON" "MEL" "MIL" "MON" "PAR" "MEX" "SJC" "SAO" "SEA" "SNG" "SYD" "TOK" "TOR" "WDC")
+SERVER=("AMS" "CHE" "DAL"  "FRA" "HKG" "LON" "MEL" "MIL" "MON" "PAR" "MEX" "SJC" "SAO" "SEA" "SNG" "SYD" "SEO" "TOK" "TOR" "WDC")
 
 
 # Function to display a string on the center of the console
@@ -120,7 +120,7 @@ center "| |_| | ___  ___| |_| |__   ___ _ __   ___| |__    _  ___  "
 center "|  _  |/ _ \/ __| __| '_ \ / _ \ '_ \ / __| '_ \  | |/ _ \ "
 center "| | | | (_) \__ \ |_| |_) |  __/ | | | (__| | | |_| | (_) |"
 center "\_| |_/\___/|___/\__|_.__/ \___|_| |_|\___|_| |_(_)_|\___/ "
-center "RC1"
+center "RC2"
 center "The benchmark usually takes about 30 minutes to be completed, but in some cases, it could last for an hour."
 center "For the reliable results, run this script only on new VPS."
 center "WARNING: During the benchmark you will write to the disk about 5GB and download about 10GB of data."
@@ -193,6 +193,7 @@ empty_line
 echo "Benchmarking maximum throughput between server and single user in different location..."
 echo "(Keep in mind that this is not equivalent to maximum download speed of the server.)"
 bandwith_benchmark 'Amsterdam, The Netherlands' 'http://speedtest.ams01.softlayer.com/downloads/test500.zip'
+bandwith_benchmark 'Chennai, India' 'http://speedtest.che01.softlayer.com/downloads/test500.zip'
 bandwith_benchmark 'Dallas, USA' 'http://speedtest.dal01.softlayer.com/downloads/test500.zip'
 bandwith_benchmark 'Frankfurt, Germany' 'http://speedtest.fra02.softlayer.com/downloads/test500.zip'
 bandwith_benchmark 'Hong Kong, China' 'http://speedtest.hkg02.softlayer.com/downloads/test500.zip'
@@ -207,6 +208,7 @@ bandwith_benchmark 'Sao Paulo, Brazil' 'http://speedtest.sao01.softlayer.com/dow
 bandwith_benchmark 'Seattle, USA' 'http://speedtest.sea01.softlayer.com/downloads/test500.zip'
 bandwith_benchmark 'Singapore, Singapore' 'http://speedtest.sng01.softlayer.com/downloads/test500.zip'
 bandwith_benchmark 'Sydney, Australia' 'http://speedtest.syd01.softlayer.com/downloads/test500.zip'
+bandwith_benchmark 'Seoul, Korea' 'http://speedtest.seo01.softlayer.com/downloads/test500.zip'
 bandwith_benchmark 'Tokyo, Japan' 'http://speedtest.tok02.softlayer.com/downloads/test500.zip'
 bandwith_benchmark 'Toronto, Canada' 'http://speedtest.tor01.softlayer.com/downloads/test500.zip'
 bandwith_benchmark 'Washington, D.C., USA' 'http://speedtest.wdc01.softlayer.com/downloads/test500.zip'
