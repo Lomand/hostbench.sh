@@ -3,19 +3,47 @@ echo "Initiating benchmark..."
 
 # Benchmark requires root privileges to be able to build packages from source and install them into the system.
 
-OS=$(echo `awk -F= '/^ID=/{print $2}' /etc/os-release`)
-
 if [ "$(whoami)" != "root" ]; then
 printf "You must run this script as root user.\n"
 exit 1
 elif test "$#" -ne 1; then
 printf "You should provide ID to run the benchmark.\nExample: sudo ./benchmark.sh 'IRMMTUI71YYCZ'\n"
 exit 1
-elif [ "$OS" !=  "ubuntu" ]; then
-printf "Unfortunately, at this stage the benchmark only works on Ubuntu.\n"
-exit 1
 else
+printf "\033c"
+echo "Installing benchmark dependencies...."
+
 # Everything is Ok, now we can start...
+OS=$(echo `awk -F= '/^ID_LIKE/{print $2}' /etc/os-release`)
+
+if [ "$OS" =  "debian" ]; then
+
+apt-get update
+apt-get install  -y build-essential libaio-dev zlib1g-dev libncurses5-dev gcc make automake autopoint pkg-config curl  checkinstall unzip libtool bc git virt-what --fix-missing
+
+elif [ "$OS" =  '"rhel fedora"' ]; then
+
+
+yum makecache fast
+yum install  rpm-build -y gcc gcc-c++ make openssl-devel libaio-devel  zlib-devel ncurses-devel  automake gettext-devel pkgconfig curl unzip rpmdevtools libtool bc git virt-what wget bind-utils
+
+rpmdev-setuptree
+# Checkinstall is not available in the standart centos repository, so we manually downloading  and installing it. 
+wget ftp://ftp.pbone.net/mirror/distrib-coffee.ipsl.jussieu.fr/mageia/distrib/4/x86_64/media/core/release/checkinstall-1.6.2.16-9.mga4.x86_64.rpm
+
+rpm -Uvh checkinstall-1.6.2.16-9.mga4.x86_64.rpm
+# Creating dirs for compiling packages...
+mkdir /root/tmp
+mkdir /usr/local/share/doc
+mkdir /usr/local/man
+mkdir /usr/local/share/man/ru
+mkdir /usr/local/share/man/pt
+mkdir /usr/local/share/doc/aria2
+
+else
+printf "Sorry, your OS is not supported, therefore, you cant execute this benchmark. Hostbench is compatible with Ubuntu 16.04, 14.04 and Centos 7.\n"
+exit 1
+fi
 
 # Function for 5 second delay between benchmarks
 empty_line()
@@ -23,14 +51,6 @@ empty_line()
   sleep 5
   echo -e ""
 }
-
-printf "\033c"
-echo "Installing benchmark dependencies...."
-
-# Updating package list and installing build dependencies
-apt-get update
-apt-get install  -y build-essential libaio-dev zlib1g-dev libncurses5-dev gcc make automake autopoint pkg-config curl  checkinstall unzip libtool bc git virt-what --fix-missing
-
 
 printf "\033c"
 echo "Building benchmark components from source code...."
@@ -45,14 +65,14 @@ cd sysbench-1.0
 ./autogen.sh
 ./configure --without-mysql
 make
-checkinstall  -y 
+checkinstall  -y --install=yes
 cd ..
 # Installing Fio...
 unzip fio-master.zip 
 cd fio-master
 ./configure
 make
-checkinstall   -y --pkgversion="213"
+checkinstall   -y --pkgversion="213" --install=yes
 cd ..
 # Installing Aria2...
 unzip aria2-master.zip
@@ -60,7 +80,7 @@ cd aria2-master
 autoreconf -i
 ./configure --without-libxml2 --without-wintls --without-appletls --disable-bittorrent --disable-metalink
 make
-checkinstall   -y --pkgversion="126"
+checkinstall   -y --pkgversion="126" --install=yes
 cd ..
 
 CORES=$(cat /proc/cpuinfo | grep processor | wc -l)
@@ -97,12 +117,12 @@ center "The benchmark usually takes about 30 minutes to be completed, but in som
 center "For the reliable results, run this script only on new VPS."
 center "WARNING: During the benchmark you will write to the disk about 5GB and download about 10GB of data."
 center "Hostbench.io accepts no responsibility for any additional costs or damage this script may cause."
-center "The script has been tested on Ubuntu 16.04 and Ubuntu 14.04. Propper execution on different OS'es is not guarantied.'"
+center "The script has been tested on Ubuntu 16.04, 14.04 and Centos 7. Propper execution on different OS'es is not guarantied.'"
 empty_line
 echo "Starting Benchmark..."
 echo "UID: $1" >> benchmark.results
 
-echo "ServerIP: `ifconfig eth0 | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1}'`" >> benchmark.results
+echo "ServerIP: `dig +short myip.opendns.com @resolver1.opendns.com`" >> benchmark.results
 echo "Getting distro information and disk size..."
 echo "Distro: `awk -F= '/^PRETTY_NAME/{print $2}' /etc/os-release`" | tee -a benchmark.results
 echo "DiskSize: `df | grep '^/' | awk '{s+=$2} END {size=sprintf("%.0f", s/1048576);print size}'`" | tee -a benchmark.results | awk '{print $1 " " $2 " GB"}'
@@ -195,6 +215,8 @@ echo "You can find a copy of the benchmark in your /root directory."
 
 echo "Removing benchmark components..."
 dpkg -r aria2 fio sysbench >/dev/null 2>&1
+
+rpm -e fio-213-1  sysbench-1.0-1 aria2-126-1 >/dev/null 2>&1
 
 rm -r /tmp/hostbench.sh
 echo "Thank you for submitting your benchmark."
