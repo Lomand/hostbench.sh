@@ -138,7 +138,7 @@ center "| |_| | ___  ___| |_| |__   ___ _ __   ___| |__    _  ___  "
 center "|  _  |/ _ \/ __| __| '_ \ / _ \ '_ \ / __| '_ \  | |/ _ \ "
 center "| | | | (_) \__ \ |_| |_) |  __/ | | | (__| | | |_| | (_) |"
 center "\_| |_/\___/|___/\__|_.__/ \___|_| |_|\___|_| |_(_)_|\___/ "
-center "RC2"
+center "RC3"
 center "The benchmark usually takes about 30 minutes to be completed, but in some cases, it could last for an hour."
 center "For the reliable results, run this script only on new VPS."
 center "WARNING: During the benchmark you will write to the disk about 5GB and download about 10GB of data."
@@ -243,7 +243,7 @@ echo "You can find a copy of the benchmark in your /root directory."
 
 echo "Removing benchmark components..."
 
-if [ "$OS" =  "debian" ]; then
+if [ "$OS" =  "debian" ] || [ "$ID" =  "debian" ]; then
 
 dpkg -r aria2 fio sysbench >/dev/null 2>&1
 
