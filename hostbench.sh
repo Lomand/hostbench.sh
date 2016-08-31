@@ -15,11 +15,29 @@ echo "Installing benchmark dependencies...."
 
 # Everything is Ok, now we can start...
 OS=$(echo `awk -F= '/^ID_LIKE/{print $2}' /etc/os-release`)
-# ID=$(echo `awk -F= '/^ID=/{print $2}' /etc/os-release`)
+ID=$(echo `awk -F= '/^ID=/{print $2}' /etc/os-release`)
 if [ "$OS" =  "debian" ]; then
 
 apt-get update
 apt-get install -y build-essential libaio-dev zlib1g-dev libncurses5-dev gcc make automake autopoint pkg-config curl  checkinstall unzip libtool bc git virt-what --fix-missing
+
+ARIA2=aria2c
+FIO=fio
+SYSBENCH=sysbench
+
+elif [ "$ID" =  "debian" ]; then
+
+apt-get update
+apt-get install -y build-essential libaio-dev zlib1g-dev libncurses5-dev gcc make automake autopoint pkg-config curl  checkinstall unzip libtool bc git virt-what --fix-missing
+
+
+# Creating dirs for compiling packages...
+mkdir /root/tmp
+mkdir /usr/local/share/doc
+mkdir /usr/local/man
+mkdir /usr/local/share/man/ru
+mkdir /usr/local/share/man/pt
+mkdir /usr/local/share/doc/aria2
 
 ARIA2=aria2c
 FIO=fio
