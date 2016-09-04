@@ -16,19 +16,41 @@ echo "Installing benchmark dependencies...."
 # Everything is Ok, now we can start...
 OS=$(echo `awk -F= '/^ID_LIKE/{print $2}' /etc/os-release`)
 ID=$(echo `awk -F= '/^ID=/{print $2}' /etc/os-release`)
+INSTALL=()
+
+# Ubuntu
 if [ "$OS" =  "debian" ]; then
 
+ESSENTIALS=(build-essential libaio-dev zlib1g-dev libncurses5-dev gcc make automake autopoint pkg-config curl  checkinstall unzip libtool bc git virt-what)
+
+for package in "${ESSENTIALS[@]}"; do
+            if [ $(dpkg-query -W -f='${Status}' $package 2>/dev/null | grep -c "ok installed") -eq 0 ];
+then
+  INSTALL+=($package)
+fi
+  done
 apt-get update
-apt-get install -y build-essential libaio-dev zlib1g-dev libncurses5-dev gcc make automake autopoint pkg-config curl  checkinstall unzip libtool bc git virt-what --fix-missing
+apt-get install -y ${INSTALL[@]} --fix-missing
 
 ARIA2=aria2c
 FIO=fio
 SYSBENCH=sysbench
 
+
+# Debian
 elif [ "$ID" =  "debian" ]; then
 
+ESSENTIALS=( build-essential libaio-dev zlib1g-dev libncurses5-dev gcc make automake autopoint pkg-config curl  checkinstall unzip libtool bc git virt-what)
+
+for package in "${ESSENTIALS[@]}"; do
+            if [ $(dpkg-query -W -f='${Status}' $package 2>/dev/null | grep -c "ok installed") -eq 0 ];
+then
+  INSTALL+=($package)
+fi
+  done
+
 apt-get update
-apt-get install -y build-essential libaio-dev zlib1g-dev libncurses5-dev gcc make automake autopoint pkg-config curl  checkinstall unzip libtool bc git virt-what --fix-missing
+apt-get install -y ${INSTALL[@]} --fix-missing
 
 
 # Creating dirs for compiling packages...
@@ -43,14 +65,21 @@ ARIA2=aria2c
 FIO=fio
 SYSBENCH=sysbench
 
+
+# Centos 7
 elif [ "$OS" =  '"rhel fedora"' ]; then
 
-ARIA2=/usr/local/bin/aria2c
-FIO=/usr/local/bin/fio
-SYSBENCH=/usr/local/bin/sysbench
+ESSENTIALS=(rpm-build  gcc gcc-c++ make openssl-devel libaio-devel  zlib-devel ncurses-devel  automake gettext-devel pkgconfig curl unzip rpmdevtools libtool bc git virt-what wget bind-utils)
+for package in "${ESSENTIALS[@]}"; do
 
+if yum list installed "$package" >/dev/null 2>&1; then
+    echo $package 'is already installed. Moving on...'
+  else
+    INSTALL+=($package)
+  fi
+  done
 yum makecache fast
-yum install -y rpm-build  gcc gcc-c++ make openssl-devel libaio-devel  zlib-devel ncurses-devel  automake gettext-devel pkgconfig curl unzip rpmdevtools libtool bc git virt-what wget bind-utils 
+yum install -y   ${INSTALL[@]}
 
 rpmdev-setuptree
 # Checkinstall is not available in the standart centos repository, so we manually downloading  and installing it. 
@@ -65,6 +94,11 @@ mkdir /usr/local/man
 mkdir /usr/local/share/man/ru
 mkdir /usr/local/share/man/pt
 mkdir /usr/local/share/doc/aria2
+
+
+ARIA2=/usr/local/bin/aria2c
+FIO=/usr/local/bin/fio
+SYSBENCH=/usr/local/bin/sysbench
 
 else
 printf "Sorry, your OS is not supported, therefore, you cant execute this benchmark. Hostbench is compatible with Ubuntu 16.04, 14.04 and Centos 7.\n"
@@ -194,7 +228,7 @@ bandwith_benchmark() {
   empty_line
   echo "[ $((COUNTER+1))/ ${#SERVER[@]}] Testing download speed from $1 (Ping: $PING ms)"
   
-  DOWNLOAD_SPEED=`$ARIA2 -d /dev -o null  --allow-overwrite=true -x 5 $2  --file-allocation=none | grep 'MiB/s\|KiB/s' | awk '{print substr($3,0, length($3)-10)}'`
+  DOWNLOAD_SPEED=`$ARIA2 -d /dev -o null  --allow-overwrite=true -x 5 $2  --file-allocation=none | grep 'MiB/s\|KiB/s' |  awk '{print $3}' | cut -f1 -d"|"`
   echo "$DOWNLOAD_SPEED"
 
   if [  "${DOWNLOAD_SPEED: -5}" == "KiB/s" ]
@@ -204,7 +238,7 @@ echo "${SERVER[COUNTER]}: $MEGABYTE"    >> benchmark.results
 else
 echo "${SERVER[COUNTER]}: ${DOWNLOAD_SPEED::-5}  " >> benchmark.results
 fi
-  echo """${SERVER[COUNTER]}"ping": $PING  """ >> benchmark.results
+  echo "${SERVER[COUNTER]}ping: $PING" >> benchmark.results
   COUNTER=$((COUNTER+1))
 }
 empty_line
@@ -247,10 +281,16 @@ if [ "$OS" =  "debian" ] || [ "$ID" =  "debian" ]; then
 
 dpkg -r aria2 fio sysbench >/dev/null 2>&1
 
+apt-get remove -y ${INSTALL[@]} >/dev/null 2>&1
+apt-get autoremove -y >/dev/null 2>&1
+
 elif [ "$OS" =  '"rhel fedora"' ]; then
 
 rpm -e fio-213-1  sysbench-1.0-1 aria2-126-1 >/dev/null 2>&1
 
+INSTALL+=(checkinstall)
+yum remove -y   ${INSTALL[@]} >/dev/null 2>&1
+package-cleanup --leaves >/dev/null 2>&1
 fi
 
 rm -r /tmp/hostbench.sh
