@@ -290,7 +290,7 @@ rpm -e fio-213-1  sysbench-1.0-1 aria2-126-1 >/dev/null 2>&1
 
 INSTALL+=(checkinstall)
 yum remove -y   ${INSTALL[@]} >/dev/null 2>&1
-yum autoremove  >/dev/null 2>&1
+yum autoremove -y >/dev/null 2>&1
 fi
 
 rm -r /tmp/hostbench.sh
