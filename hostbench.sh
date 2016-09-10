@@ -269,11 +269,11 @@ echo "Uploading results to hostbench.io..."
 
 empty_line
 curl --form "fileupload=@benchmark.results" https://submit.hostbench.io
-cp benchmark.results  /root/benchmark.results
+cp benchmark.results  ~/benchmark.results
 empty_line
 empty_line
 
-echo "You can find a copy of the benchmark in your /root directory."
+echo "You can find a copy of the benchmark in your home directory (~)."
 
 echo "Removing benchmark components..."
 
